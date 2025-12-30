@@ -1,0 +1,12 @@
+ao:1
+enableVsync:true
+fancyGraphics:false
+fboEnable:true
+fov:0.5
+gamma:1.0
+guiScale:2
+maxFps:0
+mipmapLevels:0
+particles:2
+renderDistance:8
+useVbo:true
