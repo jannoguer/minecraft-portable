@@ -1,0 +1,9 @@
+{
+	"profiles": {
+		"forge": {
+			"name": "forge",
+			"lastVersionId": "1.8.9-forge"
+		}
+	},
+	"selectedProfile": "forge"
+}

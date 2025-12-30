@@ -1,0 +1,15 @@
+ofBetterGrass:3
+ofClearWater:true
+ofClouds:1
+ofConnectedTextures:1
+ofDynamicLights:2
+ofFastMath:true
+ofFastRender:true
+ofFogType:3
+ofLazyChunkLoading:true
+ofRain:1
+ofSmartAnimations:true
+ofSmoothFps:false
+ofTranslucentBlocks:1
+ofTrees:1
+ofVignette:1
