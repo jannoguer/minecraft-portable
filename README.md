@@ -48,4 +48,6 @@ To add mods to your game:
 
 ## To Do
 
-* Add support for 32-bit systems.
+[  ] Add support for 32-bit systems. \
+[X] Add support for Linux/Unix systems. \
+[  ] Optimize config files.
