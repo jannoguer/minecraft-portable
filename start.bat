@@ -1,4 +1,6 @@
 @echo off
+setlocal enabledelayedexpansion
+
 title Minecraft Portable 1.8.9 Forge
 cd /d "%~dp0"
 
@@ -10,10 +12,9 @@ echo.
 
 set "MC_DIR=%cd%\mcdata"
 set "JAVA_CMD="
-set "RAM_AMOUNT="
+set "RAM_AMOUNT=1G"
 set "NATIVES_DIR="
 
-:: ── Detect architecture ──────────────────────────────────────────────────
 set "ARCH=x64"
 if "%PROCESSOR_ARCHITECTURE%"=="x86" (
     if not defined PROCESSOR_ARCHITEW6432 (
@@ -22,30 +23,11 @@ if "%PROCESSOR_ARCHITECTURE%"=="x86" (
 )
 echo [info] detected platform: windows-%ARCH%
 
-:: ── Detect RAM ───────────────────────────────────────────────────────────
-set "RAM_AMOUNT=1G"
-for /f "skip=1 tokens=2 delims==" %%A in ('wmic OS get TotalVisibleMemorySize /value 2^>nul') do (
-    set "TOTAL_KB=%%A"
-)
-if defined TOTAL_KB (
-    set /a "TOTAL_MB=%TOTAL_KB% / 1024" 2>nul
-    if !TOTAL_MB! GEQ 8192 (
-        set "RAM_AMOUNT=4G"
-    ) else if !TOTAL_MB! GEQ 4096 (
-        set "RAM_AMOUNT=2G"
-    ) else if !TOTAL_MB! GEQ 2048 (
-        set "RAM_AMOUNT=1G"
-    ) else (
-        set "RAM_AMOUNT=512M"
-    )
+for /f "usebackq" %%A in ('powershell -command "[math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize / 1024)" 2^>nul') do (
+    set "TOTAL_MB=%%A"
 )
 
-setlocal enabledelayedexpansion
-
-:: Recalculate with delayed expansion for the comparison
-set "RAM_AMOUNT=1G"
-if defined TOTAL_KB (
-    set /a "TOTAL_MB=!TOTAL_KB! / 1024" 2>nul
+if defined TOTAL_MB (
     if !TOTAL_MB! GEQ 8192 (
         set "RAM_AMOUNT=4G"
     ) else if !TOTAL_MB! GEQ 4096 (
@@ -57,12 +39,9 @@ if defined TOTAL_KB (
     )
     echo [info] detected !TOTAL_MB!MB total RAM -^> allocating !RAM_AMOUNT! to Minecraft.
 ) else (
-    echo [info] could not detect RAM. defaulting to !RAM_AMOUNT!.
+    echo [warn] could not detect RAM. defaulting to !RAM_AMOUNT!.
 )
 
-:: ── Find Java ────────────────────────────────────────────────────────────
-
-:: 1) Try bundled JRE for this arch
 set "BUNDLED_DIR=%cd%\jre\jdk8u472-b08-jre_windows_%ARCH%"
 if exist "!BUNDLED_DIR!\bin\java.exe" (
     set "JAVA_CMD=!BUNDLED_DIR!\bin\java.exe"
@@ -70,8 +49,6 @@ if exist "!BUNDLED_DIR!\bin\java.exe" (
     goto :java_found
 )
 
-:: 2) On 32-bit, try the 64-bit JRE (won't work, but inform the user)
-::    On 64-bit, try whatever bundled JRE exists for windows
 for /d %%D in ("%cd%\jre\jdk8u472-b08-jre_windows_*") do (
     if exist "%%D\bin\java.exe" (
         set "JAVA_CMD=%%D\bin\java.exe"
@@ -80,7 +57,6 @@ for /d %%D in ("%cd%\jre\jdk8u472-b08-jre_windows_*") do (
     )
 )
 
-:: 3) Fall back to system Java
 where java >nul 2>&1
 if !ERRORLEVEL! EQU 0 (
     set "JAVA_CMD=java"
@@ -89,7 +65,6 @@ if !ERRORLEVEL! EQU 0 (
     goto :java_found
 )
 
-:: 4) Nothing found
 echo.
 echo [error] no Java runtime found for windows-!ARCH!.
 echo.
@@ -104,10 +79,8 @@ exit /b 1
 
 :java_found
 
-:: ── Find natives ─────────────────────────────────────────────────────────
 set "NATIVES_DIR=!MC_DIR!\natives\windows-!ARCH!"
 if not exist "!NATIVES_DIR!" (
-    :: Try the x64 natives as fallback
     if exist "!MC_DIR!\natives\windows-x64" (
         set "NATIVES_DIR=!MC_DIR!\natives\windows-x64"
         echo [warn] no natives for windows-!ARCH!. trying windows-x64.
@@ -123,7 +96,6 @@ if not exist "!NATIVES_DIR!" (
     )
 )
 
-:: ── Username prompt ──────────────────────────────────────────────────────
 echo.
 set /p PLAYER_NAME="username: "
 
@@ -133,17 +105,19 @@ if "!PLAYER_NAME!"=="" (
     exit /b 1
 )
 
-:: ── Build classpath ──────────────────────────────────────────────────────
+set "PLAYER_NAME=!PLAYER_NAME:"=!"
+set "PLAYER_NAME=!PLAYER_NAME: =!"
+set "PLAYER_NAME=!PLAYER_NAME:&=!"
+
 echo.
 echo building classpath... this may take a moment.
 
 set "CLASSPATH=!MC_DIR!\versions\1.8.9-forge\1.8.9-forge.jar;!MC_DIR!\versions\1.8.9\1.8.9.jar"
-
-for /R "!MC_DIR!\libraries" %%i in (*.jar) do (
-    set "CLASSPATH=!CLASSPATH!;%%i"
+for /D /R "!MC_DIR!\libraries" %%d in (*) do (
+    set "CLASSPATH=!CLASSPATH!;%%d\*"
 )
+set "CLASSPATH=!CLASSPATH!;!MC_DIR!\libraries\*"
 
-:: ── Launch ────────────────────────────────────────────────────────────────
 echo.
 echo launching minecraft...
 echo.
@@ -152,7 +126,8 @@ echo.
   -Djava.library.path="!NATIVES_DIR!" ^
   -Dorg.lwjgl.librarypath="!NATIVES_DIR!" ^
   -Dnet.java.games.input.librarypath="!NATIVES_DIR!" ^
-  -cp "!CLASSPATH!" net.minecraft.launchwrapper.Launch ^
+  -cp "!CLASSPATH!" ^
+  net.minecraft.launchwrapper.Launch ^
   --username "!PLAYER_NAME!" ^
   --version 1.8.9-forge ^
   --gameDir "!MC_DIR!" ^

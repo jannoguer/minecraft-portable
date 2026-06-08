@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── Resolve script directory (works through symlinks) ──────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -9,7 +8,6 @@ MC_DIR="$SCRIPT_DIR/mcdata"
 RAM_AMOUNT=""
 JAVA_CMD=""
 
-# ── Detect OS ──────────────────────────────────────────────────────────────
 detect_os() {
   case "$(uname -s)" in
     Linux*)  echo "linux" ;;
@@ -21,7 +19,6 @@ detect_os() {
   esac
 }
 
-# ── Detect architecture ───────────────────────────────────────────────────
 detect_arch() {
   case "$(uname -m)" in
     x86_64|amd64)   echo "x64" ;;
@@ -33,7 +30,6 @@ detect_arch() {
   esac
 }
 
-# ── Detect available RAM and set allocation ───────────────────────────────
 detect_ram() {
   local total_mb=0
 
@@ -67,9 +63,7 @@ detect_ram() {
   fi
 }
 
-# ── Find a working Java binary ────────────────────────────────────────────
 find_java() {
-  # 1) Try bundled JRE matching this OS + arch
   local bundled_dir="$SCRIPT_DIR/jre/jdk8u472-b08-jre_${OS_NAME}_${ARCH_NAME}"
   if [ -d "$bundled_dir" ] && [ -x "$bundled_dir/bin/java" ]; then
     JAVA_CMD="$bundled_dir/bin/java"
@@ -77,7 +71,6 @@ find_java() {
     return
   fi
 
-  # 2) On macOS with Apple Silicon, try Rosetta 2 with the x64 JRE
   if [ "$OS_NAME" = "macos" ] && [ "$ARCH_NAME" = "aarch64" ]; then
     local rosetta_dir="$SCRIPT_DIR/jre/jdk8u472-b08-jre_macos_x64"
     if [ -d "$rosetta_dir" ] && [ -x "$rosetta_dir/bin/java" ]; then
@@ -89,7 +82,6 @@ find_java() {
     fi
   fi
 
-  # 3) Try any bundled JRE for this OS (different arch, may work under emulation)
   for dir in "$SCRIPT_DIR"/jre/jdk8u472-b08-jre_${OS_NAME}_*; do
     if [ -d "$dir" ] && [ -x "$dir/bin/java" ]; then
       JAVA_CMD="$dir/bin/java"
@@ -98,7 +90,6 @@ find_java() {
     fi
   done
 
-  # 4) Fall back to system Java
   if command -v java &>/dev/null; then
     JAVA_CMD="java"
     echo "[warn] no bundled JRE for ${OS_NAME}-${ARCH_NAME}. falling back to system Java."
@@ -107,7 +98,6 @@ find_java() {
     return
   fi
 
-  # 5) Nothing found
   echo ""
   echo "[error] no Java runtime found for ${OS_NAME}-${ARCH_NAME}."
   echo ""
@@ -121,15 +111,12 @@ find_java() {
   exit 1
 }
 
-# ── Select natives directory ──────────────────────────────────────────────
 find_natives() {
-  # Exact match first
   if [ -d "$MC_DIR/natives/${OS_NAME}-${ARCH_NAME}" ]; then
     NATIVES_DIR="$MC_DIR/natives/${OS_NAME}-${ARCH_NAME}"
     return
   fi
 
-  # On macOS aarch64, try the x64 natives (LWJGL 2 is x64-only, runs via Rosetta)
   if [ "$OS_NAME" = "macos" ] && [ "$ARCH_NAME" = "aarch64" ]; then
     if [ -d "$MC_DIR/natives/macos-x64" ]; then
       NATIVES_DIR="$MC_DIR/natives/macos-x64"
@@ -148,7 +135,6 @@ find_natives() {
   exit 1
 }
 
-# ── Build classpath ───────────────────────────────────────────────────────
 build_classpath() {
   CLASSPATH="$MC_DIR/versions/1.8.9-forge/1.8.9-forge.jar:$MC_DIR/versions/1.8.9/1.8.9.jar"
   while IFS= read -r -d '' jar; do
@@ -156,7 +142,6 @@ build_classpath() {
   done < <(find "$MC_DIR/libraries" -name "*.jar" -type f -print0)
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────
 
 OS_NAME="$(detect_os)"
 ARCH_NAME="$(detect_arch)"
@@ -189,8 +174,10 @@ find_natives
 echo ""
 read -rp "username: " PLAYER_NAME
 
+PLAYER_NAME="${PLAYER_NAME//[^a-zA-Z0-9_]/}"
+
 if [ -z "$PLAYER_NAME" ]; then
-  echo "[error] username cannot be empty."
+  echo "[error] username cannot be empty or contain only invalid characters."
   read -rp "Press Enter to close..."
   exit 1
 fi
