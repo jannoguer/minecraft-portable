@@ -105,7 +105,7 @@ find_java() {
   echo "  1) place a JRE in: $SCRIPT_DIR/jre/jdk8u472-b08-jre_${OS_NAME}_${ARCH_NAME}/"
   echo "  2) install Java 8 system-wide (https://adoptium.net/)"
   echo ""
-  echo "see docs/MISSING_BINARIES.md for detailed instructions."
+  echo "see README.md for the list of supported platforms."
   echo ""
   read -rp "Press Enter to close..."
   exit 1
@@ -129,7 +129,7 @@ find_natives() {
   echo "[error] no native libraries found for ${OS_NAME}-${ARCH_NAME}."
   echo "expected directory: $MC_DIR/natives/${OS_NAME}-${ARCH_NAME}/"
   echo ""
-  echo "see docs/MISSING_BINARIES.md for detailed instructions."
+  echo "see README.md for the list of supported platforms."
   echo ""
   read -rp "Press Enter to close..."
   exit 1

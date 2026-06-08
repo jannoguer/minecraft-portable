@@ -72,7 +72,7 @@ echo options:
 echo   1^) place a JRE in: %cd%\jre\jdk8u472-b08-jre_windows_!ARCH!\
 echo   2^) install Java 8 system-wide (https://adoptium.net/^)
 echo.
-echo see docs\MISSING_BINARIES.md for detailed instructions.
+echo see README.md for the list of supported platforms.
 echo.
 pause
 exit /b 1
@@ -89,7 +89,7 @@ if not exist "!NATIVES_DIR!" (
         echo [error] no native libraries found for windows-!ARCH!.
         echo expected directory: !MC_DIR!\natives\windows-!ARCH!\
         echo.
-        echo see docs\MISSING_BINARIES.md for detailed instructions.
+        echo see README.md for the list of supported platforms.
         echo.
         pause
         exit /b 1
